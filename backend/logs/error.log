@@ -1,0 +1,8 @@
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:12:45.699Z"}
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:15:08.940Z"}
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:17:23.249Z"}
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:18:30.363Z"}
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:18:48.719Z"}
+{"error":"The client is closed","level":"error","message":"Error during shutdown","service":"vibesnap-backend","timestamp":"2025-08-06T18:19:36.104Z"}
+{"error":"429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.","level":"error","message":"AI content analysis failed","service":"vibesnap-backend","timestamp":"2025-08-06T18:21:34.651Z","url":"https://www.knghomebuyers.com/"}
+{"error":"429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.","level":"error","message":"AI content analysis failed","service":"vibesnap-backend","timestamp":"2025-08-06T18:24:48.091Z","url":"https://kajabi.com/"}
