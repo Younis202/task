@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Endpoint for screenshot + PDF
+// Endpoint for screenshot + PDF of all internal pages
 app.post("/api/screenshot-pdf", async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: "No URL provided" });
@@ -26,38 +26,42 @@ app.post("/api/screenshot-pdf", async (req, res) => {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
 
-    // Get page height for scrolling and splitting
-    const pageHeight = await page.evaluate(() => document.body.scrollHeight);
+    // Collect all unique internal links (same origin)
+    const baseUrl = new URL(url).origin;
+    let links = await page.evaluate((base) => {
+      const anchors = Array.from(document.querySelectorAll("a"));
+      return anchors.map((a) => a.href).filter((href) => href.startsWith(base));
+    }, baseUrl);
 
-    // Split the page into viewport-sized screenshots for smoothness
-    const viewportHeight = 1200;
-    await page.setViewport({ width: 1280, height: viewportHeight });
+    // Remove duplicates & include the original URL
+    links = Array.from(new Set([url, ...links])); // Limit to first 10 pages for performance
 
-    let screenshots = [];
-    for (let offset = 0; offset < pageHeight; offset += viewportHeight) {
-      await page.evaluate((_offset) => window.scrollTo(0, _offset), offset);
-      await new Promise((r) => setTimeout(r, 400)); // allow for smooth scroll
-
-      const screenshotPath = path.join(tempDir, `part_${offset}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: false });
-      screenshots.push(screenshotPath);
+    let screenshotPaths = [];
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
+      const page2 = await browser.newPage();
+      await page2.goto(link, { waitUntil: "networkidle2", timeout: 60000 });
+      const screenshotPath = path.join(tempDir, `page_${i + 1}.png`);
+      await page2.screenshot({ path: screenshotPath, fullPage: true });
+      screenshotPaths.push({ path: screenshotPath, url: link });
+      await page2.close();
     }
 
     await browser.close();
 
-    // Merge screenshots into PDF
+    // Merge all screenshots into a single PDF
     const pdfPath = path.join(tempDir, "output.pdf");
     const doc = new PDFDocument({ autoFirstPage: false });
     const stream = fs.createWriteStream(pdfPath);
 
     doc.pipe(stream);
 
-    for (let imgPath of screenshots) {
-      // Use sharp to get image size (PDFKit doesn't read PNG size directly)
-      const sizeOf = require("image-size");
+    const sizeOf = require("image-size");
+    for (let { path: imgPath, url: pageUrl } of screenshotPaths) {
       const { width, height } = sizeOf(imgPath);
-      doc.addPage({ size: [width, height] });
-      doc.image(imgPath, 0, 0, { width, height });
+      doc.addPage({ size: [width, height + 40] }); // Extra space for URL
+      doc.fontSize(14).text(pageUrl, 10, 10); // Add page URL as header
+      doc.image(imgPath, 0, 40, { width, height });
     }
 
     doc.end();
@@ -66,7 +70,6 @@ app.post("/api/screenshot-pdf", async (req, res) => {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", "attachment; filename=website.pdf");
       fs.createReadStream(pdfPath).pipe(res);
-      // Clean up temp files after some time
       setTimeout(
         () => fs.rmSync(tempDir, { recursive: true, force: true }),
         60000
